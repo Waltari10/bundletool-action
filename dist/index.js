@@ -7300,7 +7300,6 @@ const exec = __nccwpck_require__(1514);
 const tc = __nccwpck_require__(7784);
 const io = __nccwpck_require__(7436);
 const httpm = __nccwpck_require__(6255);
-const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
 
 async function getBundletoolInfo(tag) {
@@ -7335,7 +7334,7 @@ async function run() {
     }
     // parameters passed to the plugin
     const AAB_FILE = core.getInput("aabFile");
-    const BASE64_KEYSTORE = core.getInput("base64Keystore");
+    const KEYSTORE_PATH = core.getInput("keystorePath");
     const KEYSTORE_PASSWORD = core.getInput("keystorePassword");
     const KEYSTORE_ALIAS = core.getInput("keystoreAlias");
     const KEY_PASSWORD = core.getInput("keyPassword");
@@ -7368,23 +7367,13 @@ async function run() {
 
     await io.which("bundletool.jar", true);
 
-    const signingKey = "signingKey.jks";
-
-    fs.writeFileSync(signingKey, BASE64_KEYSTORE, "base64", function (err) {
-      if (err) {
-        core.info(`Please check the key ${err}`);
-      } else {
-        core.info("KeyStore File Created");
-      }
-    });
-
     var extension = path.extname(AAB_FILE);
     var filename = path.basename(AAB_FILE, extension);
 
     let buildApksCmd = `java -jar ${bundleToolFile} build-apks --bundle=${AAB_FILE} --output=${filename}.apks`;
 
-    if (signingKey && BASE64_KEYSTORE) {
-      buildApksCmd += ` --ks=${signingKey}`;
+    if (KEYSTORE_PATH) {
+      buildApksCmd += ` --ks=${keystorePath}`;
     }
     if (KEYSTORE_PASSWORD) {
       buildApksCmd += ` --ks-pass=pass:${KEYSTORE_PASSWORD}`;
