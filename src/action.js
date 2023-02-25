@@ -86,18 +86,18 @@ async function run() {
 
     let buildApksCmd = `java -jar ${bundleToolFile} build-apks --bundle=${AAB_FILE} --output=${filename}.apks`;
 
-    if (signingKey && BASE64_KEYSTORE) {
-      buildApksCmd += ` --ks=${signingKey}`;
-    }
-    if (KEYSTORE_PASSWORD) {
-      buildApksCmd += ` --ks-pass=pass:${KEYSTORE_PASSWORD}`;
-    }
-    if (KEYSTORE_ALIAS) {
-      buildApksCmd += ` --ks-key-alias=${KEYSTORE_ALIAS}`;
-    }
-    if (KEY_PASSWORD) {
-      buildApksCmd += ` --key-pass=pass:${KEY_PASSWORD}`;
-    }
+    // if (signingKey && BASE64_KEYSTORE) {
+    //   buildApksCmd += ` --ks=${signingKey}`;
+    // }
+    // if (KEYSTORE_PASSWORD) {
+    //   buildApksCmd += ` --ks-pass=pass:${KEYSTORE_PASSWORD}`;
+    // }
+    // if (KEYSTORE_ALIAS) {
+    //   buildApksCmd += ` --ks-key-alias=${KEYSTORE_ALIAS}`;
+    // }
+    // if (KEY_PASSWORD) {
+    //   buildApksCmd += ` --key-pass=pass:${KEY_PASSWORD}`;
+    // }
 
     buildApksCmd += ` --mode=universal`;
 
