@@ -7303,93 +7303,116 @@ const httpm = __nccwpck_require__(6255);
 const fs = __nccwpck_require__(7147);
 const path = __nccwpck_require__(1017);
 
-async function run() {
-    try {
-        if (process.platform !== "darwin" && process.platform !== "linux") {
-            throw new Error(
-                "Unsupported virtual machine: please use either macos or ubuntu VM."
-            );
-        }
-        // parameters passed to the plugin
-        const AAB_FILE = core.getInput("aabFile");
-        const BASE64_KEYSTORE = core.getInput("base64Keystore");
-        const KEYSTORE_PASSWORD = core.getInput("keystorePassword");
-        const KEYSTORE_ALIAS = core.getInput("keystoreAlias");
-        const KEY_PASSWORD = core.getInput("keyPassword");
-        const BUNDLETOOL_VERSION = core.getInput("bundletoolVersion");
+async function getBundletoolInfo(tag) {
+  const version = tag && tag !== "latest" ? `tags/${tag}` : "latest";
+  const url = `https://api.github.com/repos/google/bundletool/releases/${version}`;
 
-        const bundleToolPath = `${process.env.HOME}/bundletool`;
-        const bundleToolFile = `${bundleToolPath}/bundletool.jar`;
+  const http = new httpm.HttpClient("bundletool-action");
+  const response = await http.getJson(url);
 
-        await io.mkdirP(bundleToolPath);
-
-        core.info(`${bundleToolPath} directory created`);
-
-        const bundletool = await getBundletoolInfo(BUNDLETOOL_VERSION);
-
-        core.info(`${bundletool.tag_name} version of bundletool will be used`);
-
-        const downloadPath = await tc.downloadTool(bundletool.url);
-
-        await io.mv(downloadPath, bundleToolFile);
-
-        core.info(`${bundleToolFile} moved to directory`);
-
-        core.addPath(bundleToolPath);
-
-        core.info(`${bundleToolPath} added to path`);
-
-        await exec.exec(`chmod +x ${bundleToolFile}`);
-
-        await io.which("bundletool.jar", true);
-
-        const signingKey = "signingKey.jks";
-
-        fs.writeFileSync(signingKey, BASE64_KEYSTORE, "base64", function(err) {
-            if (err) {
-                core.info(`Please check the key ${err}`);
-            } else {
-                core.info("KeyStore File Created");
-            }
-        });
-
-        var extension = path.extname(AAB_FILE);
-        var filename = path.basename(AAB_FILE, extension);
-
-        await exec.exec(`java -jar ${bundleToolFile} build-apks --bundle=${AAB_FILE} --output=${filename}.apks --ks=${signingKey} --ks-pass=pass:${KEYSTORE_PASSWORD} --ks-key-alias=${KEYSTORE_ALIAS} --key-pass=pass:${KEY_PASSWORD} --mode=universal`);
-        await exec.exec(`mv ${filename}.apks ${filename}.zip`);
-        await exec.exec(`unzip ${filename}.zip`);
-        await exec.exec(`mv universal.apk ${filename}.apk`);
-        core.setOutput("apkPath", `${filename}.apk`);
-
-        await exec.exec(`rm -rf ${signingKey}`);
-    } catch (error) {
-        core.setFailed(error.message);
+  if (response.statusCode !== 200) {
+    if (response.statusCode === 404) {
+      throw new Error(`Bundletool version ${tag} not found`);
     }
+    throw new Error(
+      `Unexpected HTTP response from ${url}: ${response.statusCode}`
+    );
+  }
+
+  const json = response.result;
+  return {
+    tagName: json.tag_name,
+    downloadUrl: json.assets[0].browser_download_url,
+  };
 }
 
-async function getBundletoolInfo(tag) {
-    const version = (tag && tag !== 'latest') ? `tags/${tag}` : 'latest';
-    const url = `https://api.github.com/repos/google/bundletool/releases/${version}`;
-    
-    const http = new httpm.HttpClient("bundletool-action");
-    const response = await http.getJson(url);
+async function run() {
+  try {
+    if (process.platform !== "darwin" && process.platform !== "linux") {
+      throw new Error(
+        "Unsupported virtual machine: please use either macos or ubuntu VM."
+      );
+    }
+    // parameters passed to the plugin
+    const AAB_FILE = core.getInput("aabFile");
+    const BASE64_KEYSTORE = core.getInput("base64Keystore");
+    const KEYSTORE_PASSWORD = core.getInput("keystorePassword");
+    const KEYSTORE_ALIAS = core.getInput("keystoreAlias");
+    const KEY_PASSWORD = core.getInput("keyPassword");
+    const BUNDLETOOL_VERSION = core.getInput("bundletoolVersion");
 
-    if (response.statusCode !== 200) {
-        if (response.statusCode === 404) {
-            throw new Error(`Bundletool version ${tag} not found`);
-        }
-        throw new Error(`Unexpected HTTP response from ${url}: ${response.statusCode}`);
+    const bundleToolPath = `${process.env.HOME}/bundletool`;
+    const bundleToolFile = `${bundleToolPath}/bundletool.jar`;
+
+    await io.mkdirP(bundleToolPath);
+
+    core.info(`${bundleToolPath} directory created`);
+
+    const { tagName, downloadUrl } = await getBundletoolInfo(
+      BUNDLETOOL_VERSION
+    );
+
+    core.info(`${tagName} version of bundletool will be used`);
+
+    const downloadPath = await tc.downloadTool(downloadUrl);
+
+    await io.mv(downloadPath, bundleToolFile);
+
+    core.info(`${bundleToolFile} moved to directory`);
+
+    core.addPath(bundleToolPath);
+
+    core.info(`${bundleToolPath} added to path`);
+
+    await exec.exec(`chmod +x ${bundleToolFile}`);
+
+    await io.which("bundletool.jar", true);
+
+    const signingKey = "signingKey.jks";
+
+    fs.writeFileSync(signingKey, BASE64_KEYSTORE, "base64", function (err) {
+      if (err) {
+        core.info(`Please check the key ${err}`);
+      } else {
+        core.info("KeyStore File Created");
+      }
+    });
+
+    var extension = path.extname(AAB_FILE);
+    var filename = path.basename(AAB_FILE, extension);
+
+    let buildApksCmd = `java -jar ${bundleToolFile} build-apks --bundle=${AAB_FILE} --output=${filename}.apks`;
+
+    if (signingKey && BASE64_KEYSTORE) {
+      buildApksCmd += ` --ks=${signingKey}`;
+    }
+    if (KEYSTORE_PASSWORD) {
+      buildApksCmd += ` --ks-pass=pass:${KEYSTORE_PASSWORD}`;
+    }
+    if (KEYSTORE_ALIAS) {
+      buildApksCmd += ` --ks-key-alias=${KEYSTORE_ALIAS}`;
+    }
+    if (KEY_PASSWORD) {
+      buildApksCmd += ` --key-pass=pass:${KEY_PASSWORD}`;
     }
 
-    const json = response.result;
-    return {
-        tag_name: json.tag_name,
-        url: json.assets[0].browser_download_url,
-    };
+    buildApksCmd += ` --mode=universal`;
+
+    await exec.exec(buildApksCmd);
+
+    await exec.exec(`mv ${filename}.apks ${filename}.zip`);
+    await exec.exec(`unzip ${filename}.zip`);
+    await exec.exec(`mv universal.apk ${filename}.apk`);
+    core.setOutput("apkPath", `${filename}.apk`);
+
+    await exec.exec(`rm -rf ${signingKey}`);
+  } catch (error) {
+    core.setFailed(error.message);
+  }
 }
 
 run();
+
 })();
 
 module.exports = __webpack_exports__;
