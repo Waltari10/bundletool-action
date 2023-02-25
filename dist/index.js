@@ -7393,8 +7393,6 @@ async function run() {
     await exec.exec(`unzip ${filename}.zip`);
     await exec.exec(`mv universal.apk ${filename}.apk`);
     core.setOutput("apkPath", `${filename}.apk`);
-
-    await exec.exec(`rm -rf ${signingKey}`);
   } catch (error) {
     core.setFailed(error.message);
   }
