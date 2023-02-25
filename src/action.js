@@ -76,7 +76,7 @@ async function run() {
     let buildApksCmd = `java -jar ${bundleToolFile} build-apks --bundle=${AAB_FILE} --output=${filename}.apks`;
 
     if (KEYSTORE_PATH) {
-      buildApksCmd += ` --ks=${keystorePath}`;
+      buildApksCmd += ` --ks=${KEYSTORE_PATH}`;
     }
     if (KEYSTORE_PASSWORD) {
       buildApksCmd += ` --ks-pass=pass:${KEYSTORE_PASSWORD}`;
