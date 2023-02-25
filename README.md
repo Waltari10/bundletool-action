@@ -1,5 +1,6 @@
 # BundleTool Action
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/667085e10b6740fda8942b1a11e5b866)](https://www.codacy.com/gh/mukeshsolanki/bundletool-action/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=mukeshsolanki/bundletool-action&amp;utm_campaign=Badge_Grade)
+
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/667085e10b6740fda8942b1a11e5b866)](https://www.codacy.com/gh/mukeshsolanki/bundletool-action/dashboard?utm_source=github.com&utm_medium=referral&utm_content=mukeshsolanki/bundletool-action&utm_campaign=Badge_Grade)
 [![tag badge](https://img.shields.io/github/v/tag/mukeshsolanki/bundletool-action)](https://github.com/mukeshsolanki/bundletool-action/tags)
 [![license badge](https://img.shields.io/github/license/mukeshsolanki/bundletool-action)](./LICENSE)
 
@@ -22,11 +23,12 @@ This action will directly decode this input to a file to sign your release with.
 ```bash
 openssl base64 < some_signing_key.jks | tr -d '\n' | tee some_signing_key.jks.base64.txt
 ```
+
 Then copy the contents of the `.txt` file to your GH secrets
 
 ### `keystoreAlias`
 
-**Required:** The alias of your signing key 
+**Required:** The alias of your signing key
 
 ### `keystorePassword`
 
@@ -41,9 +43,11 @@ Then copy the contents of the `.txt` file to your GH secrets
 **Optional:** The version of bundletool to use. Defaults to `latest`
 
 ## Outputs
+
 Output variables are set both locally and in environment variables.
 
 ### `apkPath`
+
 The path to the single release apk file that have been signed with this action.
 
 ## Example usage
@@ -59,11 +63,11 @@ steps:
     uses: mukeshsolanki/bundletool-action@v1.0.0
     with:
       aabFile: app/build/outputs/bundle/release/app-release.aab
-      base64Keystore: ${{ secrets.BASE64_KEY }}
+      keystorePath: ${{ secrets.KEYSTORE_PATH }}
       keystorePassword: ${{ secrets.PASSWORD }}
       keystoreAlias: ${{ secrets.ALIAS }}
       keyPassword: ${{ secrets.PASSWORD }}
-      bundletoolVersion: '1.9.0'
+      bundletoolVersion: "1.9.0"
 
   - uses: actions/upload-artifact@v3
     with:
